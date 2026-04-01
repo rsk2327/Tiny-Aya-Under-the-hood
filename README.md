@@ -1,6 +1,6 @@
 # Tiny Aya Under The Hood
 
-A mechanistic interpretability study of multilingual representation emergence in [Tiny Aya Global](https://huggingface.co/CohereLabs/tiny-aya-global) (3.35B parameters). We investigate how representations evolve across the model's 4 transformer layers to identify where language-agnostic (universal) processing emerges and where region-specific specialization occurs.
+A mechanistic interpretability study of multilingual representation emergence in [Tiny Aya Global](https://huggingface.co/CohereLabs/tiny-aya-global) (3.35B parameters, 36 transformer layers). We investigate how representations evolve across the model's layers to identify where language-agnostic (universal) processing emerges and where region-specific specialization occurs.
 
 > **Central question:** Which parts of Tiny Aya's network learn language-agnostic representations, and which parts become specialized for specific languages or regions?
 
@@ -36,7 +36,7 @@ Recent mechanistic interpretability research (Wendler et al., 2024; Dumas et al.
 2. **Language-agnostic processing** (middle layers) -- representations converge into a shared semantic space.
 3. **Language-specific decoding** (late layers) -- the model maps back to target-language token predictions.
 
-This project tests whether Tiny Aya -- a compact 3.35B-parameter model with only 4 transformer layers -- exhibits the same three-stage pattern or compresses it differently. Understanding where these transitions happen enables:
+This project tests whether Tiny Aya -- a compact 3.35B-parameter model with 36 transformer layers (3 sliding-window attention + 1 global attention, repeated 9 times) -- exhibits the same three-stage pattern or compresses it differently. Understanding where these transitions happen enables:
 
 - Targeted representation steering instead of full fine-tuning
 - Efficient parameter sharing across regional model variants (Global, South Asia, Africa)
@@ -57,18 +57,19 @@ From the [project specification](agent_docs/project_description.md):
 5. **Is alignment script-driven or semantic?** Does intra-script CKA dominate, or do different-script languages also converge?
 6. **Where does regional specialization occur?** How does delta-CKA between Global and regional variants behave across layers?
 
-## Key Findings (Expected)
+## Key Findings
 
-| Finding | Method | Notebook |
-|---|---|---|
-| Convergence layer where CKA exceeds 0.75 threshold | Linear CKA + permutation tests | 03 |
-| Language family clusters dissolve in deeper layers | Hierarchical clustering + ARI | 04 |
-| Standard CKA inflated by anisotropy (or confirmed genuine) | Whitened CKA comparison | 05 |
-| Functional alignment tracks (or diverges from) geometric alignment | MRR / Recall@k retrieval | 06 |
-| Script-based similarity decreases in later layers | Intra- vs inter-script CKA | 07 |
-| Regional specialization concentrates in late layers | Delta-CKA (Global vs Regional) | 08 |
+All 9 notebooks have been executed. The results challenge the three-stage hypothesis:
 
-*Note: Notebooks 02--08 require a CUDA GPU and have not yet been executed. Results will be populated after running the full pipeline.*
+| Finding | Method | Notebook | Result |
+|---|---|---|---|
+| No convergence layer found | Linear CKA + permutation tests | 03 | CKA peaks at Layer 0 (0.6518) and *declines* monotonically; 0.75 threshold never reached |
+| Family clusters were never present | Hierarchical clustering + ARI | 04 | ARI = -0.2340 (worse than random) at all layers; family gap negative throughout |
+| Anisotropy *suppresses* alignment | Whitened CKA comparison | 05 | Whitened CKA ≥ 0.999 from Layer 1 onward; standard CKA understates true alignment |
+| Geometry--function disconnect | MRR / Recall@k retrieval | 06 | MRR peaks at deepest layer (opposite of CKA); 54× gap between German and Bengali |
+| Script gap is negative | Intra- vs inter-script CKA | 07 | Different-script languages are *more* similar (-0.07 gap); contradicts BPE hypothesis |
+| Regional geometry preserved | Delta-CKA (Global vs Regional) | 08 | Delta-CKA ≈ 0.0001; model merging preserves cross-lingual structure perfectly |
+| Fire model dominates universally | Cross-model drift + retrieval | 09 | Fire (South Asia) achieves best MRR for 9/12 languages; 3.38× preferential target drift |
 
 ---
 
@@ -192,8 +193,8 @@ COHERE_API_KEY=...            # For linguistic_variation generation
 │   │   ├── 06_retrieval_alignment.ipynb
 │   │   ├── 07_script_decomposition.ipynb
 │   │   ├── 08_regional_comparison.ipynb
-│   │   └── 09_cross_model_drift.ipynb
-│   └── results/                    # Generated artifacts (from notebook execution, gitignored)
+│   │   └── 09_cross_model_drift.ipynb  # Cross-model drift + retrieval MRR comparison
+│   └── results/                    # Generated artifacts (from notebook execution)
 │       └── cross_lingual/
 │           ├── activations/        # Mean-pooled sentence embeddings (.pt)
 │           ├── cka_matrices/       # Pairwise CKA similarity matrices (.npy)
@@ -223,7 +224,7 @@ The repository supports multiple contributors working on independent analyses. E
 
 | Python Package | Notebooks Directory | Focus | Status |
 |---|---|---|---|
-| `src/analysis/cross_lingual_embedding_alignment/` | `analysis/cross_lingual_embedding_alignment/` | Cross-lingual embedding alignment (CKA, clustering, retrieval) | 8 notebooks + writeup |
+| `src/analysis/cross_lingual_embedding_alignment/` | `analysis/cross_lingual_embedding_alignment/` | Cross-lingual embedding alignment (CKA, clustering, retrieval, drift) | 9 notebooks + writeup |
 | `src/<next_topic>/` | `analysis/<next_topic>/` | *(available for next contributor)* | -- |
 
 ---
@@ -474,7 +475,7 @@ Style: seaborn `whitegrid` theme, `RdBu_r` colormap for CKA, 150 DPI screen / 30
 
 ## Analysis 1: Cross-Lingual Embedding Alignment
 
-**Goal:** Identify layers where language-agnostic representations emerge by measuring representational similarity across 13 languages at each of Tiny Aya's 4 transformer layers.
+**Goal:** Identify layers where language-agnostic representations emerge by measuring representational similarity across 13 languages at each of Tiny Aya's 36 transformer layers.
 
 **Full writeup:** See [`analysis/cross_lingual_embedding_alignment/paperback.md`](analysis/cross_lingual_embedding_alignment/paperback.md) for mathematical formulations, mechanistic interpretability context, and literature connections.
 
@@ -483,15 +484,16 @@ Style: seaborn `whitegrid` theme, `RdBu_r` colormap for CKA, 150 DPI screen / 30
 | # | Notebook | Description | GPU | Depends On |
 |---|---|---|---|---|
 | 01 | Data Preparation | Load FLORES+, corpus statistics, language metadata, tokenizer fertility | No | -- |
-| 02 | Activation Extraction | Extract mean-pooled hidden states from all 4 layers for 13 languages | **Yes** | 01 |
+| 02 | Activation Extraction | Extract mean-pooled hidden states from all 36 layers for 13 languages | **Yes** | 01 |
 | 03 | Cross-Lingual CKA | Core linear CKA matrices, convergence curve, permutation tests | No | 02 |
 | 04 | Language Family Clustering | Ward's method dendrograms, family dissolution, ARI tracking | No | 03 |
 | 05 | Anisotropy & Whitened CKA | Anisotropy measurement, ZCA whitening, eigenvalue spectra | No | 02 |
 | 06 | Retrieval Alignment | Translation retrieval MRR, Recall@1/5/10 per language per layer | No | 02 |
 | 07 | Script Decomposition | Intra- vs inter-script CKA, Latin-script deep dive | No | 03 |
 | 08 | Regional Comparison | Delta-CKA between Global and regional Tiny Aya variants | **Yes** | 01 |
+| 09 | Cross-Model Drift | Per-language representational drift, retrieval MRR comparison, drift-MRR correlation | No | 08 |
 
-### Five Novel Techniques
+### Six Novel Techniques
 
 | # | Technique | Research Question |
 |---|---|---|
@@ -500,6 +502,7 @@ Style: seaborn `whitegrid` theme, `RdBu_r` colormap for CKA, 150 DPI screen / 30
 | 3 | Parallel Sentence Retrieval (MRR/Recall@k) | Does geometric similarity translate to functional utility? |
 | 4 | Script-Based CKA Decomposition | Is alignment driven by shared BPE tokens or true semantics? |
 | 5 | Regional Model Delta-CKA | Does regional specialization trade off cross-lingual universality? |
+| 6 | Cross-Model Representational Drift | Do regional models shift target-language representations, and does drift predict MRR gains? |
 
 ### Output Artifacts
 
@@ -547,19 +550,20 @@ All results are saved to `analysis/results/cross_lingual/`:
 | HuggingFace ID | [`CohereLabs/tiny-aya-global`](https://huggingface.co/CohereLabs/tiny-aya-global) |
 | Parameters | 3.35B |
 | Architecture | CohereForCausalLM (decoder-only) |
-| Transformer Layers | 4 (layers 0--2: sliding-window attention; layer 3: global attention) |
+| Transformer Layers | 36 (layers 0--34: sliding-window attention; layer 35: global attention; pattern: 3 sliding-window + 1 global, repeated 9 times) |
 | Hidden Dimension | 3072 |
 | Languages | 70+ |
 | Tokenizer | CohereTokenizer (BPE), left-padding for batch inference |
 | Paper | [arXiv:2603.11510](https://arxiv.org/abs/2603.11510) |
 
-### Regional Variants (used in Notebook 08)
+### Regional Variants (used in Notebooks 08--09)
 
-| Model | HuggingFace ID | Focus |
-|---|---|---|
-| Global | `CohereLabs/tiny-aya-global` | Balanced across 70+ languages |
-| South Asia | `CohereLabs/tiny-aya-south-asia` | South Asian languages |
-| Africa | `CohereLabs/tiny-aya-africa` | African languages |
+| Model | HuggingFace ID | Focus | Target Languages |
+|---|---|---|---|
+| Global | `CohereLabs/tiny-aya-global` | Balanced across 70+ languages | All |
+| Earth | `CohereLabs/tiny-aya-earth` | West Asia + Africa | sw, am, yo, ar, tr, fa |
+| Fire | `CohereLabs/tiny-aya-fire` | South Asia | hi, bn, ta |
+| Water | `CohereLabs/tiny-aya-water` | Europe + Asia Pacific | en, de, fr, es |
 
 ---
 
@@ -573,10 +577,11 @@ The research follows a **five-stage pipeline** (from the [project specification]
 - **Linguistic variation pairs** (@danielmargento): controlled lexical, syntactic, and semantic variations for probing.
 
 ### Stage 2: Layer-wise Hidden State Extraction
-- Forward hooks (`ActivationStore`) capture hidden states at every transformer layer.
+- Forward hooks (`ActivationStore`) capture hidden states at every transformer layer (36 layers).
 - Mean pooling over non-padding tokens produces sentence-level embeddings: `(n_sentences, 3072)` per language per layer.
 - Activations detached from computation graph and moved to CPU for memory efficiency.
 - Supports fp16 (~6.7 GB VRAM) and 4-bit quantization (~1.7 GB VRAM) via bitsandbytes.
+- Total extraction: 13 languages × 36 layers × 1,012 sentences × 3,072 dimensions.
 
 ### Stage 3: Cross-Lingual Similarity Measurement
 - **Linear CKA** for fast O(n*d^2) pairwise comparison at each layer.
@@ -591,8 +596,9 @@ The research follows a **five-stage pipeline** (from the [project specification]
 - Translation retrieval (MRR, Recall@k) provides functional alignment evidence.
 
 ### Stage 5: Comparative Analysis
-- **Delta-CKA** between Global and regional models reveals where specialization occurs.
-- **Script decomposition** separates token-surface from semantic alignment.
+- **Delta-CKA** (Notebook 08) between Global and regional models reveals where specialization occurs.
+- **Script decomposition** (Notebook 07) separates token-surface from semantic alignment.
+- **Cross-model drift** (Notebook 09) measures per-language representational shifts and correlates with retrieval MRR gains.
 - Results connected to the three-stage hypothesis from the literature.
 
 ---

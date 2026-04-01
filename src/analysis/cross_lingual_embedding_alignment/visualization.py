@@ -150,38 +150,48 @@ def plot_multi_layer_heatmaps(
     cka_matrices: dict[int, NDArray],
     language_names: list[str],
     suptitle: str = "Cross-Lingual CKA Across Layers",
+    ncols: int = 2,
     figsize: tuple[float, float] | None = None,
     save_path: str | None = None,
 ) -> plt.Figure:
-    """Plot CKA heatmaps for multiple layers side by side.
+    """Plot CKA heatmaps for multiple layers in a grid layout.
 
-    Creates a horizontal row of heatmaps, one per layer, enabling
-    visual comparison of how cross-lingual similarity evolves.
+    Arranges heatmaps in a grid with ``ncols`` columns, giving each
+    subplot enough room so that 13x13 annotated cells remain legible.
 
     Args:
         cka_matrices: Dictionary mapping layer index to CKA matrix.
         language_names: Language labels for axes.
         suptitle: Super-title for the entire figure.
-        figsize: Figure size. If ``None``, auto-computed from number
-            of layers.
+        ncols: Number of columns in the grid (default 2).
+        figsize: Figure size. If ``None``, auto-computed from the
+            grid dimensions.
         save_path: Optional file path to save.
 
     Returns:
         Matplotlib Figure object.
     """
+    import math
+
     n_layers = len(cka_matrices)
     sorted_layers = sorted(cka_matrices.keys())
 
+    ncols = min(ncols, n_layers)
+    nrows = math.ceil(n_layers / ncols)
+
     if figsize is None:
-        figsize = (6 * n_layers, 5)
+        figsize = (8 * ncols, 7 * nrows)
 
-    fig, axes = plt.subplots(1, n_layers, figsize=figsize)
+    fig, axes = plt.subplots(nrows, ncols, figsize=figsize)
 
-    # Handle single-layer case (axes is not a list).
+    # Normalise axes to a flat list for uniform indexing.
     if n_layers == 1:
-        axes = [axes]
+        axes_flat = [axes]
+    else:
+        axes_flat = list(np.asarray(axes).flat)
 
-    for ax, layer_idx in zip(axes, sorted_layers):
+    for idx, layer_idx in enumerate(sorted_layers):
+        ax = axes_flat[idx]
         matrix = cka_matrices[layer_idx]
 
         sns.heatmap(
@@ -201,6 +211,10 @@ def plot_multi_layer_heatmaps(
         ax.set_title(f"Layer {layer_idx}", fontsize=12, fontweight="bold")
         ax.tick_params(axis="x", rotation=45)
         ax.tick_params(axis="y", rotation=0)
+
+    # Hide any unused subplot slots.
+    for idx in range(n_layers, len(axes_flat)):
+        axes_flat[idx].set_visible(False)
 
     fig.suptitle(suptitle, fontsize=16, fontweight="bold", y=1.02)
     plt.tight_layout()

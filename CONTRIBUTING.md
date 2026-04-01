@@ -22,7 +22,7 @@ Everything you need to know before submitting your first PR. Read this in full.
 
 ## Project Overview
 
-This is a mechanistic interpretability study of [Tiny Aya Global](https://huggingface.co/CohereLabs/tiny-aya-global), investigating where language-agnostic vs. language-specific representations emerge across its 4 transformer layers. The central question:
+This is a mechanistic interpretability study of [Tiny Aya Global](https://huggingface.co/CohereLabs/tiny-aya-global), investigating where language-agnostic vs. language-specific representations emerge across its 36 transformer layers (3 sliding-window + 1 global attention, repeated 9 times). The central question:
 
 > Which parts of Tiny Aya's network learn language-agnostic representations, and which parts become specialized for specific languages or regions?
 
@@ -39,10 +39,10 @@ src/                        # Shared Python package (import as `from src.xxx`)
   analysis/                 # Analysis sub-packages (one per topic)
     cross_lingual_embedding_alignment/  # CKA, hooks, clustering, retrieval, visualization
 analysis/                   # Analysis notebooks and writeups (one subdir per topic)
-  cross_lingual_embedding_alignment/  # 8 notebooks + paperback.md
+  cross_lingual_embedding_alignment/  # 9 notebooks (01--09) + paperback.md
 data/                       # Raw data files (CSVs, JSONs -- NOT Python code)
 tests/                      # Unit tests for src/ (71 tests, CPU-only)
-results/                    # Generated outputs (figures, metrics, activations)
+analysis/results/           # Generated outputs (figures, metrics, activations) per topic
 agent_docs/                 # Internal project specification
 ```
 
@@ -109,7 +109,7 @@ analysis/<topic_name>/          # Notebooks and writeups
 
 | Python Package | Notebooks Directory | Focus | Notebooks | Status |
 |---|---|---|---|---|
-| `src/analysis/cross_lingual_embedding_alignment/` | `analysis/cross_lingual_embedding_alignment/` | Cross-lingual embedding alignment (CKA, clustering, retrieval, script decomposition, regional comparison) | 8 | Writeup complete, awaiting GPU execution |
+| `src/analysis/cross_lingual_embedding_alignment/` | `analysis/cross_lingual_embedding_alignment/` | Cross-lingual embedding alignment (CKA, clustering, retrieval, script decomposition, regional comparison, cross-model drift) | 9 | All notebooks executed; paper skeleton + detailed writeup complete |
 | `src/analysis/<next_topic>/` | `analysis/<next_topic>/` | *(available)* | -- | -- |
 
 ### Starting a New Analysis Topic
@@ -120,7 +120,7 @@ analysis/<topic_name>/          # Notebooks and writeups
 4. Add numbered notebooks (`01_*.ipynb`, `02_*.ipynb`, etc.) in execution order to `analysis/<topic_name>/`.
 5. Import shared code: `from src.analysis.cross_lingual_embedding_alignment.cka import linear_cka`
 6. If you need new shared utilities, add them to `src/analysis/<topic_name>/` with tests in `tests/`.
-7. Save outputs to `results/<topic_name>/`.
+7. Save outputs to `analysis/results/<topic_name>/`.
 
 ---
 

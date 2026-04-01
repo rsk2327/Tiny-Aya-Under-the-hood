@@ -6,7 +6,7 @@ Comprehensive instructions for AI coding agents (Copilot, Cursor, Droid, Aider, 
 
 ## Project Context
 
-This is a **mechanistic interpretability research project** studying how multilingual representations emerge in [Tiny Aya Global](https://huggingface.co/CohereLabs/tiny-aya-global), a 3.35B-parameter multilingual LM with 4 transformer layers and hidden dimension 3072.
+This is a **mechanistic interpretability research project** studying how multilingual representations emerge in [Tiny Aya Global](https://huggingface.co/CohereLabs/tiny-aya-global), a 3.35B-parameter multilingual LM with 36 transformer layers (3 sliding-window + 1 global attention, repeated 9 times) and hidden dimension 3072.
 
 **Central question:** Where do language-agnostic representations emerge and where does language-specific specialization occur?
 
@@ -31,7 +31,7 @@ src/                        # Main Python package
     cross_lingual_embedding_alignment/clustering.py    # Hierarchical clustering, family/script dissolution (433 lines)
     cross_lingual_embedding_alignment/visualization.py # 12 plotting functions, seaborn/matplotlib (892 lines)
 analysis/                   # Analysis notebooks and writeups (one subdir per topic)
-  cross_lingual_embedding_alignment/  # 8 notebooks + paperback.md (cross-lingual alignment)
+  cross_lingual_embedding_alignment/  # 9 notebooks (01--09) + paperback.md (cross-lingual alignment)
 data/                       # Raw CSVs (test_data.csv, test_data_translation_output.csv)
 tests/                      # 71 CPU-only tests (test_cka, test_hooks, test_languages, test_retrieval)
 ```

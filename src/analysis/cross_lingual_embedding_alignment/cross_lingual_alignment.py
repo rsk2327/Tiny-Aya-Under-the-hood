@@ -261,10 +261,15 @@ class CrossLingualAlignmentAnalyzer:
                 batch_sentences = sentences[batch_start:batch_end]
 
                 # Tokenize the batch.
+                # Use padding="max_length" so every batch produces tensors
+                # with identical seq_len dimension. With padding=True the
+                # last (smaller) batch would be padded to its own longest
+                # sequence, causing a dimension mismatch when torch.cat
+                # concatenates attention masks across batches.
                 inputs = self.tokenizer(
                     batch_sentences,
                     return_tensors="pt",
-                    padding=True,
+                    padding="max_length",
                     truncation=True,
                     max_length=self.max_length,
                 ).to(self.device)
