@@ -1,0 +1,81 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tiny-aya-uth"
+version = "0.1.0"
+description = "Tiny Aya Under The Hood — Multilingual representation analysis"
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+dependencies = [
+    "torch>=2.9",
+    "transformers>=4.50",
+    "datasets>=4.0",
+    "huggingface-hub>=0.30",
+    "accelerate>=1.0",
+    "numpy>=2.0",
+    "scipy>=1.14",
+    "scikit-learn>=1.5",
+    "matplotlib>=3.9",
+    "seaborn>=0.13",
+    "tqdm>=4.66",
+    "python-dotenv>=1.0",
+    "pandas>=2.2",
+    "ipywidgets>=8.1",
+    "bitsandbytes>=0.45",
+    "ipykernel>=7.0",
+    "jupyter>=1.1",
+    "pytest>=8.0",
+    "pytest-cov>=6.0",
+    "ruff>=0.11",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # isort
+    "N",     # pep8-naming
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "SIM",   # flake8-simplify
+    "TCH",   # flake8-type-checking
+    "RUF",   # ruff-specific rules
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "B008",   # do not perform function calls in argument defaults
+    "B028",   # no explicit stacklevel in warnings.warn
+    "B905",   # zip() without strict= parameter
+    "N802",   # function name should be lowercase (conflicts with math notation)
+    "N803",   # argument name should be lowercase (conflicts with math notation like X, Y, K, L)
+    "N806",   # variable in function should be lowercase (conflicts with math notation)
+    "TC001",  # move application import into TYPE_CHECKING block
+    "TC002",  # move third-party import into TYPE_CHECKING block
+    "TC003",  # move stdlib import into TYPE_CHECKING block
+    "SIM108", # use ternary operator (keep explicit if/else for readability)
+    "RUF100", # unused noqa directive
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011", "SIM300"]
+"src/data/linguistic_variation/*" = ["RUF001", "SIM118", "F841"]
+"analysis/**/*.ipynb" = ["E402", "E741", "F401", "F541", "F811", "I001", "B018"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]

@@ -1,0 +1,22 @@
+{
+  "layer_0_intra_family_cka": 0.6152953997902249,
+  "layer_0_inter_family_cka": 0.6670598349787972,
+  "layer_0_family_gap": -0.05176443518857232,
+  "layer_0_adjusted_rand_index": -0.23397169025811823,
+  "layer_0_cophenetic_corr": 0.8316442078142423,
+  "layer_1_intra_family_cka": 0.6040166746015134,
+  "layer_1_inter_family_cka": 0.659176414121281,
+  "layer_1_family_gap": -0.0551597395197676,
+  "layer_1_adjusted_rand_index": -0.23397169025811823,
+  "layer_1_cophenetic_corr": 0.832400273956509,
+  "layer_2_intra_family_cka": 0.6063486039638519,
+  "layer_2_inter_family_cka": 0.659812995520505,
+  "layer_2_family_gap": -0.05346439155665306,
+  "layer_2_adjusted_rand_index": -0.23397169025811823,
+  "layer_2_cophenetic_corr": 0.8351706173171435,
+  "layer_3_intra_family_cka": 0.6018725568833558,
+  "layer_3_inter_family_cka": 0.6562000892379067,
+  "layer_3_family_gap": -0.0543275323545509,
+  "layer_3_adjusted_rand_index": -0.23397169025811823,
+  "layer_3_cophenetic_corr": 0.8386214790044582
+}
